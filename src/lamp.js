@@ -36,6 +36,14 @@ function createLampMesh() {
 
 // Crea lámparas en las 6 paredes de un hexágono (2 por pared)
 // Si withLights=true, agrega PointLights reales
+/**
+ * Agrega lámparas de aceite colgantes a un hexágono, una por pared.
+ * @param {THREE.Group} hexGroup - Grupo del hexágono destino
+ * @param {number} innerRadius - Radio desde el centro para colgar las lámparas
+ * @param {number} hexHeight - Altura del hexágono (para posicionar en el techo)
+ * @param {boolean} [withLights=false] - Si true, agrega PointLight a cada lámpara
+ * @returns {Array<{mesh: THREE.Mesh, light?: THREE.PointLight}>} Lámparas para animación
+ */
 export function addLampsToHex(hexGroup, innerRadius, hexHeight, withLights = false) {
   const lamps = [];
 
@@ -66,7 +74,13 @@ export function addLampsToHex(hexGroup, innerRadius, hexHeight, withLights = fal
   return lamps;
 }
 
-// Parpadeo: llamar en el game loop
+/**
+ * Anima el parpadeo de lámparas de aceite en el game loop.
+ * Usa dos ondas senoidales superpuestas para un efecto orgánico.
+ * @param {Array<{group: THREE.Group, light?: THREE.PointLight, phase: number}>} lamps
+ *   Arreglo devuelto por addLampsToHex
+ * @param {number} time - Tiempo transcurrido en segundos (performance.now / 1000)
+ */
 export function flickerLamps(lamps, time) {
   for (const lamp of lamps) {
     if (!lamp.light) continue;

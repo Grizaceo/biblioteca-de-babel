@@ -9,6 +9,15 @@ const railMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.5
 
 // Crea una escalera de caracol que sube desde floorY hasta floorY + HEX_HEIGHT
 // direction: 1 = sube, -1 = baja
+/**
+ * Crea una escalera de caracol borgiana: poste central + escalones
+ * helicoidales + baranda. Va desde floorY hasta floorY + HEX_HEIGHT.
+ * @param {number} cx - Centro X
+ * @param {number} cz - Centro Z
+ * @param {number} floorY - Altura del piso
+ * @param {number} [direction=1] - 1 sube, -1 baja
+ * @returns {THREE.Group} Grupo con la escalera completa
+ */
 export function createSpiralStaircase(cx, cz, floorY, direction = 1) {
   const group = new THREE.Group();
   group.position.set(cx, floorY, cz);

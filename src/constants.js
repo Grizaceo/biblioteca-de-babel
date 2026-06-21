@@ -2,8 +2,6 @@
 export const HEX_RADIUS = 5;          // radio del hexágono (centro a vértice)
 export const HEX_HEIGHT = 6;          // altura del hexágono (de piso a techo)
 export const WALL_THICKNESS = 0.2;
-export const RAILING_HEIGHT = 1.0;    // altura de la baranda del pozo
-export const FLOOR_OFFSET = -2;        // qué tan abajo empieza el hexágono
 export const CENTER_HOLE_RADIUS = 2;  // radio del pozo central
 
 // Estantes

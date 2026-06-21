@@ -7,7 +7,7 @@ import { createHexRoom, hexToWorld, createHexGrid } from './hexagon.js';
 import { flickerLamps } from './lamp.js';
 import {
   HEX_RADIUS, HEX_HEIGHT, VISIBLE_FLOORS,
-  CENTER_HOLE_RADIUS, FLOOR_OFFSET,
+  CENTER_HOLE_RADIUS,
   COLORS,
 } from './constants.js';
 

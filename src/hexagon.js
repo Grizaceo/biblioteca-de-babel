@@ -7,11 +7,11 @@ import { addLampsToHex } from './lamp.js';
 import { createBook } from './book.js';
 import {
   HEX_RADIUS, HEX_HEIGHT, WALL_THICKNESS,
-  RAILING_HEIGHT, CENTER_HOLE_RADIUS,
+  CENTER_HOLE_RADIUS,
   SHELF_DEPTH, SHELF_HEIGHT, SHELF_Y_BOTTOM,
   SHELF_SPACING, NUM_SHELVES_PER_WALL,
   BOOKS_PER_SHELF, BOOK_WIDTH, BOOK_HEIGHT, BOOK_DEPTH,
-  COLORS, FLOOR_OFFSET,
+  COLORS,
 } from './constants.js';
 
 // Esquina del hexágono: puntos en el plano XZ
@@ -37,11 +37,19 @@ const wallMat = new THREE.MeshStandardMaterial({ color: COLORS.wall, roughness: 
 const railingMat = new THREE.MeshStandardMaterial({ color: COLORS.railing, roughness: 0.6, metalness: 0.3 });
 const railMat = new THREE.MeshStandardMaterial({ color: COLORS.railing_rail, roughness: 0.5, metalness: 0.4 });
 const shelfMat = new THREE.MeshStandardMaterial({ color: COLORS.shelf, roughness: 0.7, metalness: 0.1 });
-const bookMat = new THREE.MeshStandardMaterial({ color: COLORS.book_spine });
-const bookPageMat = new THREE.MeshStandardMaterial({ color: COLORS.book_page });
 
-// Crea un hexágono (una galería) completo
-// Devuelve { group, lamps } para el parpadeo en el game loop
+/**
+ * Construye una galería hexágonal completa: piso, paredes con estantes,
+ * vestíbulos con escaleras, baranda interior y lámparas.
+ *
+ * @param {number} centerX - Posición X del centro del hexágono
+ * @param {number} centerZ - Posición Z del centro del hexágono
+ * @param {number} floorY - Altura del piso (eje Y)
+ * @param {boolean} [withLights=false] - Si true, las lámparas emiten luz real
+ * @returns {{ group: THREE.Group, lamps: Array, stairTriggers: Array }}
+ *   group: el grupo 3D completo; lamps: para animación de parpadeo;
+ *   stairTriggers: zonas de trigger para subir/bajar de piso
+ */
 export function createHexRoom(centerX, centerZ, floorY, withLights = false) {
   const group = new THREE.Group();
   group.position.set(centerX, floorY, centerZ);
@@ -358,14 +366,29 @@ function addVestibuleWall(group, p1, p2, wallIndex) {
   group.add(step);
 }
 
-// Coordenadas hexagonales axiales a cartesianas
+/**
+ * Convierte coordenadas axiales de hexágono a coordenadas cartesianas XZ.
+ * Usa orientación pointy-top (vértice arriba).
+ * @param {number} q - Coordenada axial q (columnas)
+ * @param {number} r - Coordenada axial r (filas diagonales)
+ * @returns {{ x: number, z: number }} Posición en el plano XZ
+ */
 export function hexToWorld(q, r) {
   const x = HEX_RADIUS * 1.5 * q;
   const z = HEX_RADIUS * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r);
   return { x, z };
 }
 
-// Genera un grid de hexágonos alrededor del centro
+/**
+ * Genera un grid de coordenadas hexagonales axiales alrededor del centro.
+ * La condición |q + r| <= radius filta posiciones fuera del anillo.
+ * @param {number} radius - Cantidad de anillos alrededor del centro (0 = solo centro)
+ * @returns {Array<{q: number, r: number}>} Lista de coordenadas hexagonales
+ *
+ * @example
+ * createHexGrid(0) // [{q:0, r:0}]
+ * createHexGrid(1) // 7 hexágonos (centro + 6 vecinos)
+ */
 export function createHexGrid(radius) {
   const positions = [];
   for (let q = -radius; q <= radius; q++) {

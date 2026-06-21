@@ -46,6 +46,12 @@ function generateSpineTexture(variant) {
 // Crea un libro como grupo de meshes
 // bookIndex define color/altura/textura determinista
 // return: THREE.Group con el libro de pie, lomo hacia +X
+/**
+ * Crea un libro detallado con lomo texturizado, páginas y cantos dorados.
+ * Cada índice produce un color de lomo pseudoaleatorio.
+ * @param {number} [bookIndex=0] - Índice para variar color y altura
+ * @returns {THREE.Group} Grupo con meshes del libro (lomo, páginas, cantos)
+ */
 export function createBook(bookIndex = 0) {
   const group = new THREE.Group();
 
