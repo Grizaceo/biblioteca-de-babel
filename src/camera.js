@@ -1,9 +1,16 @@
 // Cámara FPS con PointerLockControls simplificado
-// WASD + mouse look + gravedad + escaleras + colisiones (inyectadas)
+// WASD + mouse look + gravedad + escaleras (tween atómico con flag consumed)
+// + colisiones (inyectadas)
 
 import * as THREE from 'three';
-import { MOUSE_SENSITIVITY, MOVE_SPEED, PLAYER_HEIGHT, HEX_HEIGHT } from './constants.js';
+import { MOUSE_SENSITIVITY, MOVE_SPEED, PLAYER_HEIGHT } from './constants.js';
 import { PLAYER_RADIUS, pushOut } from './physics.js';
+import {
+  findActiveTrigger,
+  releaseConsumedTriggers,
+  buildTransition,
+  advanceTransition,
+} from './stairTransition.js';
 
 export class FPSCamera {
   constructor(camera, domElement) {
@@ -20,7 +27,9 @@ export class FPSCamera {
 
     // Escaleras
     this.stairTriggers = [];
-    this.stairTransition = null; // { targetY, progress } cuando está subiendo/bajando
+    this.stairTransition = null; // descriptor devuelto por buildTransition()
+    this.consumedStairs = new Set(); // triggers que ya dispararon en este piso
+    this.stairCooldown = 0; // segundos de gracia tras terminar una transición
 
     // Colisiones — inyectadas por main.js cada frame desde FloorPool
     this.getColliders = () => [];
@@ -74,31 +83,38 @@ export class FPSCamera {
   }
 
   update(delta) {
-    // Si estamos en transición de escalera, no aplicamos gravedad normal
+    // ─── Transición de escalera activa ───
+    // Durante el tween no aplicamos gravedad ni movimiento WASD. La posición
+    // XZ+Y es totalmente controlada por advanceTransition().
     if (this.stairTransition) {
-      this.stairTransition.progress += delta / 0.6; // 0.6 segundos de transición
-      if (this.stairTransition.progress >= 1) {
-        // Terminó
-        this.camera.position.y = this.stairTransition.targetY;
+      const r = advanceTransition(this.stairTransition, delta, PLAYER_HEIGHT);
+      this.camera.position.x = r.x;
+      this.camera.position.y = r.y;
+      this.camera.position.z = r.z;
+      if (r.done) {
         this.velocity.y = 0;
         this.canJump = true;
         this.stairTransition = null;
-      } else {
-        // Interpolación suave (ease-in-out cúbico)
-        const t = this.stairTransition.progress;
-        const smooth = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        this.camera.position.y = PLAYER_HEIGHT + this.stairTransition.fromY
-          + (this.stairTransition.targetY - (PLAYER_HEIGHT + this.stairTransition.fromY)) * smooth;
-
-        // Espiral: orbitar alrededor del centro de la escalera
-        const totalRotation = this.stairTransition.direction * Math.PI * 3; // 3 vueltas completas
-        const angle = this.stairTransition.startAngle + totalRotation * smooth;
-        const spiralRadius = 0.5; // dentro de la escalera (radio 0.8)
-        this.camera.position.x = this.stairTransition.centerX + Math.cos(angle) * spiralRadius;
-        this.camera.position.z = this.stairTransition.centerZ + Math.sin(angle) * spiralRadius;
-        return; // no procesar movimiento ni gravedad durante transición
+        // Cooldown: durante los próximos ~0.5s no se re-disparan escaleras.
+        // Evita que el tween deje al player en una posición donde otro
+        // trigger re-detecte inmediatamente (problema del loop original).
+        this.stairCooldown = 0.5;
       }
+      return; // no procesar WASD/gravedad/colisiones durante el tween
     }
+
+    // Tick del cooldown post-transición
+    if (this.stairCooldown > 0) {
+      this.stairCooldown -= delta;
+    }
+
+    // Liberar triggers consumidos si el player salió de su radio (histéresis)
+    releaseConsumedTriggers(
+      this.camera.position.x,
+      this.camera.position.z,
+      this.stairTriggers,
+      this.consumedStairs,
+    );
 
     const speed = this.keys.shift ? MOVE_SPEED * 2 : MOVE_SPEED;
 
@@ -154,39 +170,33 @@ export class FPSCamera {
       this.canJump = true;
     }
 
-    // Detección de escaleras
-    const triggerRadius = 0.9;
-    const floorY = this.camera.position.y - PLAYER_HEIGHT;
-    for (const t of this.stairTriggers) {
-      const dx = this.camera.position.x - t.worldX;
-      const dz = this.camera.position.z - t.worldZ;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist > triggerRadius) continue;
-
-      // El trigger debe estar en el mismo piso que el jugador (con tolerancia)
-      const floorDist = Math.abs(floorY - t.worldY);
-      if (floorDist > 0.5) continue;
-
-      // Iniciar transición con espiral
-      const newFloorY = t.worldY + t.direction * HEX_HEIGHT;
-      const dxCam = this.camera.position.x - t.worldX;
-      const dzCam = this.camera.position.z - t.worldZ;
-      const startAngle = Math.atan2(dzCam, dxCam);
-      this.stairTransition = {
-        fromY: floorY,
-        targetY: newFloorY + PLAYER_HEIGHT,
-        progress: 0,
-        centerX: t.worldX,
-        centerZ: t.worldZ,
-        startAngle: startAngle,
-        direction: t.direction,
-      };
-      // Pequeño empuje horizontal hacia las escaleras
-      this.camera.position.x = t.worldX + dx * 0.3;
-      this.camera.position.z = t.worldZ + dz * 0.3;
-      this.velocity.y = 0;
-      this.canJump = false;
-      break; // solo una escalera a la vez
+    // Detección de escaleras — usa el módulo puro stairTransition.js
+    // para mantener la lógica testeable. findActiveTrigger respeta el flag
+    // `consumedStairs` (Set), por lo que un trigger que ya disparó no puede
+    // volver a disparar mientras el player siga dentro de su radio.
+    if (this.stairCooldown <= 0) {
+      const floorY = this.camera.position.y - PLAYER_HEIGHT;
+      const active = findActiveTrigger(
+        this.camera.position.x,
+        this.camera.position.z,
+        floorY,
+        this.stairTriggers,
+        this.consumedStairs,
+      );
+      if (active) {
+        // Marcar consumido ANTES de iniciar — clave contra el loop.
+        this.consumedStairs.add(active.trigger);
+        this.stairTransition = buildTransition(
+          active.trigger,
+          floorY,
+          this.camera.position.x,
+          this.camera.position.z,
+          PLAYER_HEIGHT,
+        );
+        this.velocity.y = 0;
+        this.canJump = false;
+        return; // siguiente frame entra al bloque de tween
+      }
     }
   }
 }
