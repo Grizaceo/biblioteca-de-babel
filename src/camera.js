@@ -85,6 +85,13 @@ export class FPSCamera {
         const smooth = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         this.camera.position.y = PLAYER_HEIGHT + this.stairTransition.fromY
           + (this.stairTransition.targetY - (PLAYER_HEIGHT + this.stairTransition.fromY)) * smooth;
+
+        // Espiral: orbitar alrededor del centro de la escalera
+        const totalRotation = this.stairTransition.direction * Math.PI * 3; // 3 vueltas completas
+        const angle = this.stairTransition.startAngle + totalRotation * smooth;
+        const spiralRadius = 0.5; // dentro de la escalera (radio 0.8)
+        this.camera.position.x = this.stairTransition.centerX + Math.cos(angle) * spiralRadius;
+        this.camera.position.z = this.stairTransition.centerZ + Math.sin(angle) * spiralRadius;
         return; // no procesar movimiento ni gravedad durante transición
       }
     }
@@ -137,12 +144,19 @@ export class FPSCamera {
       const floorDist = Math.abs(floorY - t.worldY);
       if (floorDist > 0.5) continue;
 
-      // Iniciar transición
+      // Iniciar transición con espiral
       const newFloorY = t.worldY + t.direction * HEX_HEIGHT;
+      const dxCam = this.camera.position.x - t.worldX;
+      const dzCam = this.camera.position.z - t.worldZ;
+      const startAngle = Math.atan2(dzCam, dxCam);
       this.stairTransition = {
         fromY: floorY,
         targetY: newFloorY + PLAYER_HEIGHT,
         progress: 0,
+        centerX: t.worldX,
+        centerZ: t.worldZ,
+        startAngle: startAngle,
+        direction: t.direction,
       };
       // Pequeño empuje horizontal hacia las escaleras
       this.camera.position.x = t.worldX + dx * 0.3;

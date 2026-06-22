@@ -1,9 +1,12 @@
-// Libros detallados — paleta de colores, geometría con lomo, páginas, textura de "texto"
-// El libro se orienta con el lomo hacia +X, páginas a -X
+// Libros detallados — paleta de colores, geometría con lomo, páginas y textura
+// de "texto" tomada del alfabeto canónico de 25 símbolos del cuento.
+// El libro se orienta con el lomo hacia +X, páginas a -X.
 import * as THREE from 'three';
-import { BOOK_WIDTH, BOOK_HEIGHT, BOOK_DEPTH } from './constants.js';
+import { BOOK_WIDTH, BOOK_HEIGHT, BOOK_DEPTH, ALPHABET } from './constants.js';
 
-const SPINE_COLORS = [
+// Paleta de lomos (cuero, pergamino oscuro, tintes apagados). Compartida con la
+// estantería instanciada (bookshelf.js) para una apariencia coherente.
+export const SPINE_COLORS = [
   0x8b2500, 0x2c1810, 0x3b2f2f, 0x1a2e1a,
   0x1a1a3e, 0x2c1a30, 0x3a2a1a, 0x1a1a1a,
   0x5c3a1a, 0x3a2a00, 0x4a2020, 0x202040,
@@ -11,7 +14,26 @@ const SPINE_COLORS = [
 
 const spineTextureCache = new Map();
 
-function generateSpineTexture(variant) {
+// PRNG determinista (mulberry32) — misma semilla ⇒ mismo lomo en cada arranque.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Genera (y cachea) la textura de un lomo: base de pergamino claro, bandas
+ * doradas y renglones de glifos tomados del ALFABETO de 25 símbolos.
+ * La base es clara a propósito para multiplicarse bien con el color del lomo
+ * (material.color en createBook, o instanceColor en la estantería instanciada).
+ * @param {number} variant - Índice; el resultado se cachea por `variant % 8`.
+ * @returns {THREE.CanvasTexture}
+ */
+export function generateSpineTexture(variant) {
   const key = variant % 8;
   if (spineTextureCache.has(key)) return spineTextureCache.get(key);
 
@@ -19,36 +41,44 @@ function generateSpineTexture(variant) {
   canvas.width = 128;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 128, 256);
 
-  // Líneas decorativas doradas (simulan letras y dorado en el lomo)
-  ctx.strokeStyle = `hsla(45, 40%, ${50 + (variant % 3) * 15}%, 0.7)`;
-  ctx.fillStyle = `hsla(45, 30%, 45%, 0.5)`;
-  ctx.fillRect(10, 20, 108, 2);
-  ctx.fillRect(10, 30, 108, 1);
+  // Base clara para que el color del lomo "tiña" la textura al multiplicar.
+  ctx.fillStyle = '#d9c9a6';
+  ctx.fillRect(0, 0, 128, 256);
 
-  for (let i = 0; i < 12 + variant % 8; i++) {
-    const y = 55 + i * (14 + (variant % 3));
-    const lineWidth = 30 + (variant * 7 + i * 13) % 71;
-    const xOffset = (variant * 3 + i * 7) % 20;
-    ctx.fillStyle = `hsla(45, 20%, ${60 + (variant * 5 + i * 11) % 30}%, ${0.3 + (variant * 7 + i * 3) % 5 * 0.1})`;
-    ctx.fillRect(15 + xOffset, y, lineWidth, 1);
+  // Bandas doradas (nervios del lomo)
+  ctx.fillStyle = 'hsla(45, 55%, 42%, 0.9)';
+  ctx.fillRect(8, 18, 112, 4);
+  ctx.fillRect(8, 30, 112, 2);
+  ctx.fillRect(8, 226, 112, 2);
+  ctx.fillRect(8, 234, 112, 4);
+
+  // Renglones de glifos del alfabeto canónico: "todas las combinaciones" de los
+  // 25 símbolos. Tinta tenue para no saturar; legible de cerca, textura de lejos.
+  const rng = mulberry32(variant * 2654435761 + 17);
+  ctx.font = 'bold 13px "Courier New", monospace';
+  ctx.textBaseline = 'top';
+  const charsPerRow = 8;
+  for (let row = 0; row < 13; row++) {
+    let line = '';
+    for (let c = 0; c < charsPerRow; c++) {
+      line += ALPHABET[Math.floor(rng() * ALPHABET.length)];
+    }
+    const ink = 18 + Math.floor(rng() * 22);
+    ctx.fillStyle = `rgba(${ink},${ink},${ink},0.78)`;
+    ctx.fillText(line, 12, 46 + row * 13);
   }
 
-  ctx.fillRect(10, 200, 108, 1);
-  ctx.fillRect(10, 210, 108, 2);
-
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   spineTextureCache.set(key, texture);
   return texture;
 }
 
-// Crea un libro como grupo de meshes
-// bookIndex define color/altura/textura determinista
-// return: THREE.Group con el libro de pie, lomo hacia +X
 /**
  * Crea un libro detallado con lomo texturizado, páginas y cantos dorados.
- * Cada índice produce un color de lomo pseudoaleatorio.
+ * Usado para inspección cercana y como referencia; las estanterías pobladas
+ * usan la versión instanciada (bookshelf.js) por rendimiento.
  * @param {number} [bookIndex=0] - Índice para variar color y altura
  * @returns {THREE.Group} Grupo con meshes del libro (lomo, páginas, cantos)
  */
