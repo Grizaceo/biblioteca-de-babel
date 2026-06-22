@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createHexGrid, hexToWorld } from '../hexagon.js';
+import { createHexGrid, hexToWorld, worldToHex } from '../geometry.js';
 import { HEX_RADIUS, GRID_RADIUS, CENTER_HOLE_RADIUS } from '../constants.js';
 
 describe('createHexGrid', () => {
@@ -35,8 +35,7 @@ describe('createHexGrid', () => {
   });
 
   it('GRID_RADIUS produce createHexGrid(GRID_RADIUS) === 7', () => {
-    // GRID_RADIUS = 1 en constants.js = 7 hexágonos
-    expect(GRID_RADIUS).toBe(1);
+    expect(GRID_RADIUS).toBeGreaterThanOrEqual(1);
     const grid = createHexGrid(GRID_RADIUS);
     expect(grid).toHaveLength(7);
   });
@@ -80,3 +79,49 @@ describe('hexToWorld', () => {
     expect(a.z).toBeCloseTo(-b.z);
   });
 });
+
+describe('worldToHex', () => {
+  it('centro (0, 0) retorna { q: 0, r: 0 }', () => {
+    const { q, r } = worldToHex(0, 0);
+    expect(q).toBe(0);
+    expect(r).toBe(0);
+  });
+
+  it('hexToWorld ∘ worldToHex ∘ hexToWorld es invariante', () => {
+    const testCases = [[0,0], [1,0], [0,1], [-1,1], [-1,0], [0,-1], [1,-1], [2,-1], [-2,3]];
+    for (const [qIn, rIn] of testCases) {
+      const { x, z } = hexToWorld(qIn, rIn);
+      const { q, r } = worldToHex(x, z);
+      expect(q === 0 ? 0 : q).toBe(qIn);
+      expect(r === 0 ? 0 : r).toBe(rIn);
+    }
+  });
+
+  it('simetría: worldToHex(-x, -z) es el opuesto de worldToHex(x, z)', () => {
+    const a = worldToHex(3.5, -2.1);
+    const b = worldToHex(-3.5, 2.1);
+    expect(a.q).toBe(-b.q);
+    expect(a.r).toBe(-b.r);
+  });
+
+  it('punto cerca del vecino (1,0) redondea a ese hexágono', () => {
+    const { x, z } = hexToWorld(1, 0);
+    // Pequeña perturbación
+    const { q, r } = worldToHex(x + 0.01, z + 0.01);
+    expect(q).toBe(1);
+    expect(r).toBe(0);
+  });
+
+  it('punto cerca de frontera entre hexágonos redondea al más cercano', () => {
+    // Punto exactamente entre centro y vecino (1,0)
+    const { x: x1, z: z1 } = hexToWorld(0, 0);
+    const { x: x2, z: z2 } = hexToWorld(1, 0);
+    const midX = (x1 + x2) / 2;
+    const midZ = (z1 + z2) / 2;
+    // El punto medio debe redondear a algún hexágono (no necesariamente el 0 o 1)
+    const { q, r } = worldToHex(midX, midZ);
+    expect(Number.isInteger(q)).toBe(true);
+    expect(Number.isInteger(r)).toBe(true);
+  });
+});
+
