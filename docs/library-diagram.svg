@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 600" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#14100c"/>
+      <stop offset="100%" stop-color="#070605"/>
+    </radialGradient>
+    <radialGradient id="pozo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="80%" stop-color="#050403"/>
+      <stop offset="100%" stop-color="#1a130c"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="880" height="600" fill="url(#bg)"/>
+
+  <!-- Galería hexagonal (planta) — vértices a 60°·i − 30° -->
+  <polygon points="497.8,180 497.8,420 290,540 82.2,420 82.2,180 290,60"
+           fill="#1c140d" stroke="#a0895f" stroke-width="3"/>
+
+  <!-- Muros con anaqueles (4 lados): hachura de estantes -->
+  <!-- pared 5: v5(290,60)–v0(497.8,180) -->
+  <g stroke="#c8a050" stroke-width="1.4" opacity="0.85">
+    <line x1="318" y1="92"  x2="470" y2="148"/>
+    <line x1="312" y1="108" x2="464" y2="164"/>
+    <line x1="306" y1="124" x2="458" y2="180"/>
+    <!-- pared 0: v0(497.8,180)–v1(497.8,420) (vertical derecha) -->
+    <line x1="468" y1="210" x2="468" y2="390"/>
+    <line x1="452" y1="210" x2="452" y2="390"/>
+    <line x1="436" y1="210" x2="436" y2="390"/>
+    <!-- pared 2: v2(290,540)–v3(82.2,420) -->
+    <line x1="262" y1="508" x2="110" y2="452"/>
+    <line x1="268" y1="492" x2="116" y2="436"/>
+    <line x1="274" y1="476" x2="122" y2="420"/>
+    <!-- pared 3: v3(82.2,420)–v4(82.2,180) (vertical izquierda) -->
+    <line x1="112" y1="210" x2="112" y2="390"/>
+    <line x1="128" y1="210" x2="128" y2="390"/>
+    <line x1="144" y1="210" x2="144" y2="390"/>
+  </g>
+
+  <!-- Vestíbulos (2 lados libres): paredes 1 y 4, con escalera espiral -->
+  <!-- pared 1: v1(497.8,420)–v2(290,540) -->
+  <g fill="none" stroke="#7a8a9a" stroke-width="2.4" stroke-linecap="round">
+    <path d="M 430 466 q -10 -10 -20 0 q -10 10 -22 2 q -12 -8 -20 6"/>
+  </g>
+  <!-- pared 4: v4(82.2,180)–v5(290,60) -->
+  <g fill="none" stroke="#d4a574" stroke-width="2.4" stroke-linecap="round">
+    <path d="M 150 130 q 10 -10 20 0 q 10 10 22 2 q 12 -8 20 6"/>
+  </g>
+
+  <!-- Pozo de ventilación central + barandal -->
+  <circle cx="290" cy="300" r="100" fill="none" stroke="#8b7355" stroke-width="2" stroke-dasharray="6 5" opacity="0.8"/>
+  <circle cx="290" cy="300" r="92" fill="url(#pozo)" stroke="#a0895f" stroke-width="1.5"/>
+  <text x="290" y="296" fill="#6b5a45" font-size="13" text-anchor="middle" font-style="italic">pozo de</text>
+  <text x="290" y="313" fill="#6b5a45" font-size="13" text-anchor="middle" font-style="italic">ventilación</text>
+
+  <!-- Dos lámparas transversales -->
+  <g>
+    <circle cx="455" cy="300" r="8" fill="#ffd78f"/>
+    <circle cx="455" cy="300" r="16" fill="#ff8800" opacity="0.18"/>
+    <circle cx="125" cy="300" r="8" fill="#ffd78f"/>
+    <circle cx="125" cy="300" r="16" fill="#ff8800" opacity="0.18"/>
+  </g>
+
+  <!-- Espejo del zaguán (pared 1) -->
+  <rect x="392" y="452" width="10" height="44" fill="#222d33" stroke="#6b5030" stroke-width="2" transform="rotate(28 397 474)"/>
+
+  <!-- Leyenda -->
+  <g fill="#c8b896">
+    <text x="600" y="78" font-size="22" font-variant="small-caps" letter-spacing="2">La galería hexagonal</text>
+    <line x1="600" y1="92" x2="852" y2="92" stroke="#a0895f" stroke-width="1" opacity="0.5"/>
+    <g font-size="15">
+      <text x="600" y="128">◆ 4 muros con anaqueles</text>
+      <text x="618" y="150" fill="#9a8c70" font-size="13" font-style="italic">«todos los lados menos dos»</text>
+      <text x="600" y="184">◆ 5 anaqueles por muro · 32 libros</text>
+      <text x="618" y="206" fill="#9a8c70" font-size="13" font-style="italic">20 anaqueles, 640 libros por sala</text>
+      <text x="600" y="240">◆ 2 vestíbulos con escalera espiral</text>
+      <text x="600" y="274">◆ 2 lámparas transversales</text>
+      <text x="600" y="308">◆ pozo de ventilación + barandal</text>
+      <text x="600" y="342">◆ un espejo en el zaguán</text>
+    </g>
+    <line x1="600" y1="372" x2="852" y2="372" stroke="#a0895f" stroke-width="1" opacity="0.3"/>
+    <text x="600" y="408" font-size="13" fill="#9a8c70" font-style="italic">410 páginas · 40 renglones · 80 letras</text>
+    <text x="600" y="430" font-size="13" fill="#9a8c70" font-style="italic">25 símbolos ortográficos</text>
+    <text x="600" y="520" font-size="13" fill="#7a6a52" font-style="italic">«El universo (que otros llaman la</text>
+    <text x="600" y="540" font-size="13" fill="#7a6a52" font-style="italic">Biblioteca) se compone de un número</text>
+    <text x="600" y="560" font-size="13" fill="#7a6a52" font-style="italic">indefinido, y tal vez infinito, de</text>
+    <text x="600" y="580" font-size="13" fill="#7a6a52" font-style="italic">galerías hexagonales…»  — J. L. Borges</text>
+  </g>
+</svg>
