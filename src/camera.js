@@ -1,8 +1,9 @@
 // Cámara FPS con PointerLockControls simplificado
-// WASD + mouse look + gravedad + escaleras
+// WASD + mouse look + gravedad + escaleras + colisiones (inyectadas)
 
 import * as THREE from 'three';
 import { MOUSE_SENSITIVITY, MOVE_SPEED, PLAYER_HEIGHT, HEX_HEIGHT } from './constants.js';
+import { PLAYER_RADIUS, pushOut } from './physics.js';
 
 export class FPSCamera {
   constructor(camera, domElement) {
@@ -20,6 +21,9 @@ export class FPSCamera {
     // Escaleras
     this.stairTriggers = [];
     this.stairTransition = null; // { targetY, progress } cuando está subiendo/bajando
+
+    // Colisiones — inyectadas por main.js cada frame desde FloorPool
+    this.getColliders = () => [];
 
     // Pointer Lock
     domElement.addEventListener('click', () => {
@@ -122,6 +126,25 @@ export class FPSCamera {
     // Aplicar movimiento
     this.camera.position.x += this.moveVec.x;
     this.camera.position.z += this.moveVec.z;
+
+    // Colisiones XZ (paredes del hex actual + barandas del pozo).
+    // El integrador inyecta los colisionadores del hex del player cada frame
+    // (anillo 1 = 7 hexes para cubrir el caso de borde entre dos salas).
+    // Si getColliders() no está conectado (no-op por defecto), el pushOut
+    // opera sobre [] y no hace nada, así que el código sigue siendo seguro
+    // aunque se olvide de inyectar.
+    const colliders = this.getColliders();
+    if (colliders.length > 0) {
+      const out = pushOut(
+        this.camera.position.x,
+        this.camera.position.z,
+        colliders,
+        PLAYER_RADIUS,
+      );
+      this.camera.position.x = out.x;
+      this.camera.position.z = out.z;
+    }
+
     this.camera.position.y += this.velocity.y * delta;
 
     // Piso base (floor 0)

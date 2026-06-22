@@ -59,6 +59,13 @@ const floorPool = new FloorPool(scene, hexGrid);
 // Pasar triggers de escaleras a la cámara
 fpsCamera.setStairTriggers(floorPool.getStairTriggers());
 
+// Inyectar fuente de colisionadores — el pool los calcula on-demand desde
+// el hex del player (anillo 1 = 7 hexes) usando physics.collidersForArea.
+fpsCamera.getColliders = () => floorPool.getCollidersAt(
+  camera.position.x,
+  camera.position.z,
+);
+
 // ─── Suelo invisible (para no caer al vacío) ───
 const groundRing = new THREE.Mesh(
   new THREE.RingGeometry(CENTER_HOLE_RADIUS, HEX_RADIUS * 3, 64),

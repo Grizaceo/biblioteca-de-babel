@@ -2,12 +2,13 @@
 // Responsabilidad única: gestionar el ciclo de vida de los pisos renderizados.
 
 import * as THREE from 'three';
-import { hexToWorld } from './geometry.js';
+import { hexToWorld, worldToHex } from './geometry.js';
 import { createHexRoom } from './hexagon.js';
 import {
   VISIBLE_FLOORS, LOD_FULL_DIST, LOD_MEDIUM_DIST, LOD_LOW_DIST,
-  HEX_HEIGHT, PLAYER_HEIGHT, HEX_RADIUS,
+  HEX_HEIGHT, PLAYER_HEIGHT, HEX_RADIUS, CENTER_HOLE_RADIUS,
 } from './constants.js';
+import { collidersForArea } from './physics.js';
 
 export class FloorPool {
   constructor(scene, hexGrid) {
@@ -83,6 +84,26 @@ export class FloorPool {
 
   getStairTriggers() { return this.allStairTriggers; }
   getLamps() { return this.allLamps; }
+
+  /**
+   * Devuelve los colisionadores XZ aplicables al punto (x, z) en el piso del
+   * jugador. Usa `worldToHex` para identificar el hex actual y
+   * `collidersForArea` para incluir los 6 vecinos (anillo 1), cubriendo el
+   * caso de borde entre dos salas. Se computa on-demand — el costo es ~7
+   * hexes × 7 colliders = 49 objetos por frame, despreciable.
+   *
+   * @param {number} x - posición X del player (en world)
+   * @param {number} z - posición Z del player (en world)
+   * @returns {Array} colisionadores (mezcla de 'wall' y 'railing')
+   */
+  getCollidersAt(x, z) {
+    const { q, r } = worldToHex(x, z);
+    return collidersForArea(
+      q, r,
+      hexToWorld, worldToHex,
+      HEX_RADIUS, CENTER_HOLE_RADIUS,
+    );
+  }
 
   // Culling vertical por frustum + cercanía al jugador
   updateVisibility(camera) {
