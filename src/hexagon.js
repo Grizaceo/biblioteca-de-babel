@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { createSpiralStaircase } from './staircase.js';
 import { addLampsToHex } from './lamp.js';
 import { createBookWall } from './bookshelf.js';
-import { hexCorners, createHexRing } from './geometry.js';
+import { hexCorners, createHexRing, worldToHex } from './geometry.js';
 import {
   HEX_RADIUS, HEX_HEIGHT, WALL_THICKNESS,
   CENTER_HOLE_RADIUS,
@@ -106,6 +106,11 @@ export function createHexRoom(centerX, centerZ, floorY, withLights = false, lod 
   const outer = hexCorners(0, 0, HEX_RADIUS);
   const inner = hexCorners(0, 0, CENTER_HOLE_RADIUS);
 
+  // Identidad axial del hex — necesaria para los libros (metadata del
+  // raycaster). Computamos desde centerX/centerZ usando worldToHex.
+  const { q: hexQ, r: hexR } = worldToHex(centerX, centerZ);
+  const floorIdx = Math.round(floorY / HEX_HEIGHT);
+
   // 1. PISO: hexágono anular (outer - inner) — siempre presente
   const floor = new THREE.Mesh(ringGeom, floorMat);
   floor.rotation.x = -Math.PI / 2;
@@ -126,7 +131,11 @@ export function createHexRoom(centerX, centerZ, floorY, withLights = false, lod 
       addVestibuleWall(group, p1, p2, i, lod);
     } else if (lod <= 1) {
       // Galería con estantes; libros solo en LOD 0
-      addWallWithShelves(group, p1, p2, i, lod === 0);
+      addWallWithShelves(group, p1, p2, i, lod === 0, {
+        hexQ,
+        hexR,
+        floorIdx,
+      });
     } else {
       // LOD 2: solo pared lisa, sin estantes
       addPlainWall(group, p1, p2);
@@ -232,7 +241,7 @@ function addPlainWall(group, p1, p2) {
 }
 
 // Agrega una pared con estantes y opcionalmente libros
-function addWallWithShelves(group, p1, p2, wallIndex, addBooks = true) {
+function addWallWithShelves(group, p1, p2, wallIndex, addBooks = true, meta = {}) {
   const dx = p2.x - p1.x;
   const dz = p2.z - p1.z;
   const wallLength = Math.sqrt(dx * dx + dz * dz);
@@ -264,7 +273,12 @@ function addWallWithShelves(group, p1, p2, wallIndex, addBooks = true) {
 
   // ---- LIBROS: 32 por anaquel, instanciados (un draw call por muro) ----
   if (addBooks) {
-    shelfGroup.add(createBookWall(wallLength, wallIndex, inwardOffset));
+    shelfGroup.add(createBookWall(wallLength, wallIndex, inwardOffset, {
+      hexQ: meta.hexQ ?? 0,
+      hexR: meta.hexR ?? 0,
+      floorIdx: meta.floorIdx ?? 0,
+      wallIdx: wallIndex,
+    }));
   }
 
   group.add(shelfGroup);

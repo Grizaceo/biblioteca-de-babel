@@ -61,9 +61,12 @@ function wallMaterial(wallIndex) {
  * @param {number} wallIndex - Índice de muro (0-5); fija textura y semilla.
  * @param {number} inwardOffset - Desplazamiento local X hacia el interior
  *   (negativo), donde se apoyan anaqueles y libros.
+ * @param {object} [meta={}] - Metadata del muro. Se guarda en `mesh.userData`
+ *   para que el raycaster pueda identificar el hex/piso/wall al hacer click.
+ *   Forma esperada: { hexQ, hexR, floorIdx, wallIdx, booksPerShelf, shelvesPerWall }
  * @returns {THREE.InstancedMesh} Malla instanciada con BOOKS_PER_WALL libros.
  */
-export function createBookWall(wallLength, wallIndex, inwardOffset) {
+export function createBookWall(wallLength, wallIndex, inwardOffset, meta = {}) {
   const usableLen = wallLength * 0.85;
   const spacing = (usableLen - BOOK_WIDTH) / BOOKS_PER_SHELF;
 
@@ -105,5 +108,17 @@ export function createBookWall(wallLength, wallIndex, inwardOffset) {
   mesh.castShadow = false;
   mesh.receiveShadow = false;
   mesh.computeBoundingSphere(); // bounding correcto para frustum culling
+
+  // Metadata para el raycaster — identifica la posición (hex q,r,floor, wall)
+  // de este InstancedMesh. El instanceId del raycaster da shelf/bookIndex.
+  mesh.userData = {
+    isBookWall: true,
+    hexQ: meta.hexQ ?? 0,
+    hexR: meta.hexR ?? 0,
+    floorIdx: meta.floorIdx ?? 0,
+    wallIdx: meta.wallIdx ?? wallIndex,
+    booksPerShelf: meta.booksPerShelf ?? BOOKS_PER_SHELF,
+    shelvesPerWall: meta.shelvesPerWall ?? NUM_SHELVES_PER_WALL,
+  };
   return mesh;
 }

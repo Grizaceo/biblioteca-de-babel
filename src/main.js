@@ -17,6 +17,7 @@ import {
   PLAYER_HEIGHT,
 } from './constants.js';
 import { HUD } from './hud.js';
+import { BookInspector } from './bookInspector.js';
 
 // ─── Setup renderer ───
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -83,6 +84,28 @@ scene.add(groundRing);
 
 // ─── HUD borgiano ───
 const hud = new HUD();
+
+// ─── Inspector de libros (raycaster + modal DOM) ───
+const bookInspector = new BookInspector(scene, camera, floorPool.bookWalls);
+
+// Click izquierdo mientras el puntero está bloqueado → inspecciona libro.
+// Sin lock, el listener de FPSCamera pide el lock.
+// Si el modal ya está abierto, el listener del overlay se encarga.
+document.addEventListener('click', () => {
+  if (!document.pointerLockElement) return;
+  if (bookInspector.isOpen()) return;
+  bookInspector.inspectFromCenter();
+});
+
+// Cerrar el modal devuelve el control: pide pointer lock de nuevo.
+const _origClose = bookInspector.close.bind(bookInspector);
+bookInspector.close = () => {
+  _origClose();
+  // Re-pedir pointer lock al cerrar el modal (UX de "volver al juego").
+  // Pequeño delay para que el navegador no ignore el request por el click
+  // sintético que disparó el cierre.
+  setTimeout(() => renderer.domElement.requestPointerLock(), 50);
+};
 
 // ─── FPS smoothing (EMA) ───
 let fpsSmooth = 60;

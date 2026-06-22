@@ -17,6 +17,7 @@ export class FloorPool {
     this.floors = [];       // { group, lod, floorIdx, yPos, lamps[], stairTriggers[] }
     this.allLamps = [];
     this.allStairTriggers = [];
+    this.bookWalls = [];    // InstancedMesh[] con userData.isBookWall=true (para raycaster)
 
     // Frustum culling — reusado en cada frame
     this._frustum = new THREE.Frustum();
@@ -56,6 +57,14 @@ export class FloorPool {
           floorGroup.add(group);
           floorLamps.push(...lamps);
           floorTriggers.push(...stairTriggers);
+
+          // Recolectar InstancedMesh de libros para el raycaster.
+          // Solo existen en LOD 0-1 (libros solo en LOD 0 según addBooks).
+          group.traverse((obj) => {
+            if (obj.isInstancedMesh && obj.userData?.isBookWall) {
+              this.bookWalls.push(obj);
+            }
+          });
         } catch (err) {
           console.error(`[FloorPool] Error en piso ${f}, hex (${pos.q}, ${pos.r}):`, err);
         }
@@ -150,5 +159,6 @@ export class FloorPool {
     this.floors.length = 0;
     this.allLamps.length = 0;
     this.allStairTriggers.length = 0;
+    this.bookWalls.length = 0;
   }
 }
