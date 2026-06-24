@@ -50,7 +50,14 @@ export class FloorPool {
 
       for (const pos of this.hexGrid) {
         const { x, z } = hexToWorld(pos.q, pos.r);
-        const withLights = (pos.q === 0 && pos.r === 0 && Math.abs(f) <= 1);
+        // Iluminación borgiana: solo los hexes del piso actual (±2) del
+        // player llevan PointLight para evitar saturar Three.js (límite
+        // práctico ~64 PointLights con MeshStandardMaterial, más allá hace
+        // fallback y aún así rinde pero es preferible mantenernos abajo).
+        // 7 hexes × 2 lámparas = 14 PointLights por piso, 5 pisos = 70.
+        // El resto de salas queda iluminado por ambient + hemi + top/bot
+        // direccionales, suficiente para orientarse sin quedar a oscuras.
+        const withLights = (lod === 0);
 
         try {
           const { group, lamps, stairTriggers } = createHexRoom(x, z, yPos, withLights, lod);

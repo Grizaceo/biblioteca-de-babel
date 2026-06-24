@@ -11,6 +11,7 @@ import { createSpiralStaircase } from './staircase.js';
 import { addLampsToHex } from './lamp.js';
 import { createBookWall } from './bookshelf.js';
 import { hexCorners, createHexRing, worldToHex } from './geometry.js';
+import { STAIR_PLACEMENT_OFFSET, STAIR_TRIGGER_RADIUS } from './stairTransition.js';
 import {
   HEX_RADIUS, HEX_HEIGHT, WALL_THICKNESS,
   CENTER_HOLE_RADIUS,
@@ -61,7 +62,7 @@ const mirrorGlassGeom = new THREE.BoxGeometry(0.04, HEX_HEIGHT * 0.6, EDGE * 0.1
 const railPostGeom = new THREE.CylinderGeometry(0.08, 0.1, 1.2, 8);
 const railBarGeom = new THREE.CylinderGeometry(0.02, 0.02, 1.0, 4);
 const railRailGeom = new THREE.BoxGeometry(0.08, 0.06, 1);
-const markerGeom = new THREE.CircleGeometry(0.75, 12);
+const markerGeom = new THREE.CircleGeometry(STAIR_TRIGGER_RADIUS * 0.92, 12);
 const arrowGeom = new THREE.ConeGeometry(0.2, 0.35, 4);
 
 // Base de piedra corrida de la baranda (anillo hexagonal alrededor del pozo).
@@ -150,7 +151,7 @@ export function createHexRoom(centerX, centerZ, floorY, withLights = false, lod 
   // 4. ESCALERAS en los vestíbulos — siempre (necesarias para gameplay)
   const stairWall1 = outer[1].clone().lerp(outer[2], 0.5);
   const stairWall4 = outer[4].clone().lerp(outer[5], 0.5);
-  const inward = 0.4;
+  const inward = STAIR_PLACEMENT_OFFSET; // ~1.6 desde el muro hacia adentro
   const toCenter1 = new THREE.Vector3(-stairWall1.x, 0, -stairWall1.z).normalize().multiplyScalar(inward);
   const toCenter4 = new THREE.Vector3(-stairWall4.x, 0, -stairWall4.z).normalize().multiplyScalar(inward);
 

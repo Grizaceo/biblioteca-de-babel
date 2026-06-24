@@ -72,7 +72,10 @@ export function addLampsToHex(hexGroup, innerRadius, hexHeight, withLights = fal
     let light = null;
     if (withLights) {
       // "La luz que emiten es insuficiente, incesante." Intensidad contenida.
-      light = new THREE.PointLight(0xff8800, 1.5, 10, 2);
+      // Bajada de 1.5 → 0.55 para que con ~182 PointLights simultáneas
+      // (todos los hexes visibles) la escena no se sature. distance=8 cae
+      // a ~0.05 a 4 unidades: ilumina la sala actual sin derramarse.
+      light = new THREE.PointLight(0xff8800, 0.55, 8, 2);
       light.position.set(x, yPos - 0.1, z);
       hexGroup.add(light);
     }

@@ -26,27 +26,45 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.8;
+// Exposure se ajusta DESPUÉS de las luces — ver bloque "Lights" abajo.
+renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
 // ─── Scene ───
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a0a); // casi negro
-scene.fog = new THREE.FogExp2(0x0a0a0a, 0.012); // niebla para profundidad infinita
+// Niebla más suave — antes 0.012 (tragaba las salas contiguas).
+// 0.004 deja ver ~5 hexes a la redonda antes de diluir, manteniendo el
+// sentido de infinito de la Biblioteca pero permitiendo orientarse.
+scene.fog = new THREE.FogExp2(0x141008, 0.004);
 
 // ─── Camera ───
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
 const fpsCamera = new FPSCamera(camera, renderer.domElement);
 
 // ─── Lights ───
-const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
+// Iluminación borgiana: penumbra cálida. La Biblioteca es tenebrosa, no
+// oscura total. Subimos ambient + hemisphere para que el player NUNCA quede
+// a ciegas: incluso en salas sin lámparas individuales (la mayoría del pool)
+// siempre hay luz tenue suficiente para orientarse. Las lámparas de aceite
+// con PointLight dan calidez/puntualidad a las salas iluminadas.
+const ambientLight = new THREE.AmbientLight(0x6a5840, 0.9); // base cálida
 scene.add(ambientLight);
 
-const topLight = new THREE.DirectionalLight(0xffd78f, 0.8);
+// Hemisphere: simulamos la "luz del techo invisible" de cada sala —
+// tenue, ligeramente fría arriba y cálida abajo para diferenciar
+// piso/techo. Se combina con el ambient para evitar el efecto plano.
+const hemiLight = new THREE.HemisphereLight(0x7a6048, 0x3a2820, 0.55);
+hemiLight.position.set(0, 50, 0);
+scene.add(hemiLight);
+
+// Tope direccional bajado — antes 0.8 saturaba las caras superiores.
+// Ahora 0.3 marca la dirección vertical sin quemar el techo.
+const topLight = new THREE.DirectionalLight(0xffd78f, 0.3);
 topLight.position.set(0, 30, 0);
 scene.add(topLight);
 
-const bottomLight = new THREE.DirectionalLight(0x4a3a6a, 0.3);
+const bottomLight = new THREE.DirectionalLight(0x4a3a6a, 0.15);
 bottomLight.position.set(0, -30, 0);
 scene.add(bottomLight);
 
@@ -122,9 +140,9 @@ window.addEventListener('resize', () => {
 const stairTriggers = floorPool.getStairTriggers();
 
 function checkNearStair(cameraPos) {
-  const triggerRadius = 1.8; // más generoso que el trigger real (0.9) para avisar antes
+  const triggerRadius = 2.8; // más generoso que el trigger real (1.6) para avisar antes
   const floorY = cameraPos.y - PLAYER_HEIGHT;
-  const halfTrigger = 0.9; // radio real de activación en camera.js
+  const halfTrigger = 1.6; // radio real de activación en stairTransition.js
 
   for (const t of stairTriggers) {
     const dx = cameraPos.x - t.worldX;

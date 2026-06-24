@@ -14,9 +14,24 @@
 import { HEX_HEIGHT } from './constants.js';
 
 export const STAIR_TRANSITION_DURATION = 0.6; // segundos
-export const STAIR_TRIGGER_RADIUS = 0.9;
+/**
+ * Radio del trigger de escalera. Antes 0.9 (invisible para el player porque
+ * la baranda del pozo + el PLAYER_RADIUS apenas lo dejaban alcanzar).
+ * Subido a 1.6: cabe el player (radio 0.3) más ~0.3 de margen de colisión
+ * con la pared + ~1.0 de área de "pisar la baldosa" sin necesidad de
+ * precisión quirúrgica.
+ */
+export const STAIR_TRIGGER_RADIUS = 1.6;
+/**
+ * Distancia (en metros) desde el muro hacia adentro del hex en la que se
+ * coloca la baldosa del trigger. Antes 0.4 (apenas separado del muro, casi
+ * inalcanzable). Ahora 1.6: suficiente para que el player pueda pisarla
+ * sin chocar con la pared ni con la baranda del pozo. La baranda del
+ * pozo está a ~2 unidades, así que 1.6 deja un margen de 0.4 con ella.
+ */
+export const STAIR_PLACEMENT_OFFSET = 1.6;
 export const STAIR_FLOOR_TOLERANCE = 0.5; // |floorY - worldY| permitido
-export const STAIR_CONSUMED_HYSTERESIS = 0.4; // margen sobre radio para liberar
+export const STAIR_CONSUMED_HYSTERESIS = 0.6; // margen sobre radio para liberar
 export const STAIR_COOLDOWN_AFTER = 0.5; // segundos sin re-trigger tras tween
 
 // ─── Helpers puros ───────────────────────────────────────────────────────────
